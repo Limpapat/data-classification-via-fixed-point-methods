@@ -29,6 +29,8 @@ class MLP(nn.Module):
             self.activation = nn.Sigmoid()
         elif activation == 'linear' or activation == 'identity':
             self.activation = nn.Identity()
+        elif activation == 'softmax':
+            self.activation = torch.nn.Softmax(dim=1)
         else:
             raise TypeError("activation does not supported, activation should be in [\'sigmoid\', \'linear\']")
 
