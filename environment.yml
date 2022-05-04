@@ -1,0 +1,47 @@
+name: dc-fp
+channels:
+  - defaults
+dependencies:
+  - ca-certificates=2022.3.29=hecd8cb5_1
+  - certifi=2021.10.8=py39hecd8cb5_2
+  - libcxx=12.0.0=h2f01273_0
+  - libffi=3.3=hb1e8313_2
+  - ncurses=6.3=hca72f7f_2
+  - openssl=1.1.1n=hca72f7f_0
+  - pip=21.2.4=py39hecd8cb5_0
+  - python=3.9.12=hdfd78df_0
+  - readline=8.1.2=hca72f7f_1
+  - setuptools=61.2.0=py39hecd8cb5_0
+  - sqlite=3.38.2=h707629a_0
+  - tk=8.6.11=h7bc2e8c_0
+  - tzdata=2022a=hda174b7_0
+  - wheel=0.37.1=pyhd3eb1b0_0
+  - xz=5.2.5=h1de35cc_0
+  - zlib=1.2.12=h4dc903c_2
+  - pip:
+    - charset-normalizer==2.0.12
+    - cycler==0.11.0
+    - fonttools==4.33.3
+    - idna==3.3
+    - joblib==1.1.0
+    - kiwisolver==1.4.2
+    - matplotlib==3.5.2
+    - numpy==1.22.3
+    - packaging==21.3
+    - pandas==1.4.2
+    - pillow==9.1.0
+    - pyparsing==3.0.8
+    - python-dateutil==2.8.2
+    - pytz==2022.1
+    - requests==2.27.1
+    - scikit-learn==1.0.2
+    - scipy==1.8.0
+    - six==1.16.0
+    - sklearn==0.0
+    - threadpoolctl==3.1.0
+    - torch==1.11.0
+    - torchaudio==0.11.0
+    - torchvision==0.12.0
+    - typing-extensions==4.2.0
+    - urllib3==1.26.9
+prefix: /Users/limbus/opt/anaconda3/envs/dc-fp
