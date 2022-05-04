@@ -5,7 +5,8 @@ import torch
 
 class MLP(nn.Module):
     """
-        Multi-Layers Perceptron Model
+    MLP
+        Descriptions: Multi-Layers Perceptron Model
         Parameters:
             - num_features : int : the number of features (input nodes)
             - num_hidden_nodes : list or int : the number of hidden layer nodes
