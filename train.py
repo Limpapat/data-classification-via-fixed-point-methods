@@ -1,5 +1,6 @@
 from model.model import MLP
 from utils.utils import get_data, plot_decision_regions
+from utils.functional import *
 import matplotlib.pyplot as plt
 import argparse
 import torch
@@ -52,6 +53,24 @@ if __name__ == '__main__':
         default='SGD',
         help='An optimizer name, default is \'SGD\''
     )
+    parser.add_argument(
+        '-p', '--penalty',
+        type=str,
+        default=None,
+        help='Regularization method, default is None. --penalty sould be in [\'l1\', \'l2\', \'None\']'
+    )
+    parser.add_argument(
+        '-rp', '--reg_param',
+        type=float,
+        default=0.01,
+        help='Regularization parameter, default is 0.01'
+    )
+    parser.add_argument(
+        '-lr', '--learning_rate',
+        type=float,
+        default=0.2,
+        help='Learning rate, default is 0.2'
+    )
     ### plan ###
     # add more argument
 
@@ -85,15 +104,29 @@ if __name__ == '__main__':
         loss_fn = torch.nn.CrossEntropyLoss()
     else:
         raise ValueError('Unsupported loss : loss should be in [\'MSE\', \'BCE\', \'MCE\']')
+    
+    if args.penalty is not None:
+        print(f"Regularization : \'{args.penalty}\'")
+        print(f"Regularization parameter : \'{args.reg_param}\'")
+        if args.penalty == 'l1':
+            loss_reg_fn = l1_fn
+        elif args.penalty == 'l2':
+            loss_reg_fn = l2_fn
+        else:
+            raise ValueError('Unsupported penalty : penalty should be in [\'l1\', \'l2\', \'None\']')
 
     ### Setting model & optimizer
     _n_features, _n_classes = X_train.shape[-1], torch.unique(y_train).shape[0]
     model = MLP(num_features=_n_features, num_classes=_n_classes, activation='softmax')
     if args.optimizer == 'SGD':
-        optimizer = optim.SGD(model.parameters(), lr=.2)
+        _splitting_type_method = False
+        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate)
+    elif args.optimizer == 'FBA':
+        _splitting_type_method = True
+        # update later
     else:
         raise ValueError(f"Invalid optimizer : optimizer {args.optimizer} not found : please check our optimizer supported")
-    print(f"Optimizer: {args.optimizer}")
+    print(f"Optimizer: \'{args.optimizer}\'")
 
     print("\n=========== TRAINING ===========\n")
     _LOSS, _ACCTRA, _ACCVAL = [], [], []
@@ -104,11 +137,21 @@ if __name__ == '__main__':
         probas = model(X_train)
         score = torch.where(torch.argmax(probas, dim=1) == y_train, 1, 0).sum()
         _ACCTRA.append(score/probas.shape[0])
-        loss = loss_fn(probas, y_train)
-        _LOSS.append(loss.item())
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        if _splitting_type_method:
+            loss = loss_fn(probas, y_train)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            loss_reg = sum(loss_reg_fn(p.clone()) for p in model.parameters()) if args.penalty is not None else 0.
+            loss += args.reg_param * loss_reg
+            _LOSS.append(loss.item())
+        else:
+            loss_reg = sum(loss_reg_fn(p) for p in model.parameters()) if args.penalty is not None else 0.
+            loss = loss_fn(probas, y_train) + args.reg_param * loss_reg
+            _LOSS.append(loss.item())
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
         ### validation
         with torch.no_grad():
             model.eval()
@@ -129,7 +172,7 @@ if __name__ == '__main__':
     if args.save is not None:
         save_path = 'trained_models'
         name_save = args.save + ".pth" if args.save.split('.')[-1] != 'pth' else name_save
-        torch.save({
+        checkpoint_dict = {
             'n_iters' : args.n_iteration,
             'name' : name_save,
             'time_created' : datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -140,7 +183,11 @@ if __name__ == '__main__':
             'train_acc' : _ACCTRA,
             'validation_acc' : _ACCVAL,
             'elapsed_time' : elapsed_time
-        }, os.path.join(save_path,name_save))
+        }
+        if args.penalty is not None:
+            checkpoint_dict['penalty'] = args.penalty
+            checkpoint_dict['reg_param'] = args.reg_param
+        torch.save(checkpoint_dict, os.path.join(save_path,name_save))
 
     #### Update later! ####
     label = [0, 1, 2]
