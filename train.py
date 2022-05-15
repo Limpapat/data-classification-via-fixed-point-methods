@@ -4,19 +4,19 @@ import matplotlib.pyplot as plt
 import argparse
 import torch
 import os, sys, time
-
+from datetime import datetime
 import torch.optim as optim
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--n_iteration',
+        '-n', '--n_iteration',
         type=int,
         default=100,
         help='Number of iteration, default is 100'
     )
     parser.add_argument(
-        '--data',
+        '-d', '--data',
         type=str,
         default='',
         help='Dataset directory'
@@ -29,24 +29,25 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--split_ratio',
-        type=list,
+        type=float,
+        nargs='+',
         default=[.1, .3],
         help='List of ratio to split dataset, default is [.1, .3] which means get test 10%% data of dataset and get validation 30%% data of remains'
     )
     parser.add_argument(
-        '--loss',
+        '-l', '--loss',
         type=str,
         default='MSE',
         help='Loss function, default is \'MSE\''
     )
     parser.add_argument(
-        '--save',
+        '-s', '--save',
         type=str,
         default=None,
         help='Saved model\'s name, default is None. The trained model didn\'t be saved if --save is None'
     )
     parser.add_argument(
-        '--optimizer',
+        '-o', '--optimizer',
         type=str,
         default='SGD',
         help='An optimizer name, default is \'SGD\''
@@ -55,7 +56,7 @@ if __name__ == '__main__':
     # add more argument
 
     args = parser.parse_args()
-    print("\n===== INITAILIZING =====\n")
+    print("\n========= INITAILIZING =========\n")
     print(f"Data directory : \'{args.data}\'")
     if os.path.isfile(args.data):
         X, y = get_data(csv_path=args.data, split_ratio=args.split_ratio, disp=args.disp)
@@ -94,7 +95,7 @@ if __name__ == '__main__':
         raise ValueError(f"Invalid optimizer : optimizer {args.optimizer} not found : please check our optimizer supported")
     print(f"Optimizer: {args.optimizer}")
 
-    print("\n===== TRAINING =====\n")
+    print("\n=========== TRAINING ===========\n")
     _LOSS, _ACCTRA, _ACCVAL = [], [], []
     start_time = time.time()
     for epoch in range(args.n_iteration):
@@ -122,7 +123,7 @@ if __name__ == '__main__':
     
     elapsed_time = time.time() - start_time
     print("\nElapsed time: %.2fs" % (elapsed_time))
-    print("===================\n")
+    print("================================\n")
 
     ### Save model
     if args.save is not None:
@@ -130,6 +131,8 @@ if __name__ == '__main__':
         name_save = args.save + ".pth" if args.save.split('.')[-1] != 'pth' else name_save
         torch.save({
             'n_iters' : args.n_iteration,
+            'name' : name_save,
+            'time_created' : datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'model_state_dict' : model.state_dict(),
             'optimizer' : args.optimizer,
             'optimizer_state_dict' : optimizer.state_dict(),
@@ -140,7 +143,7 @@ if __name__ == '__main__':
         }, os.path.join(save_path,name_save))
 
     #### Update later! ####
-    label = [0,1, 2]
+    label = [0, 1, 2]
     plt.figure(figsize=(10,8))
     plt.subplot(221)
     plot_decision_regions(X_train.to(torch.device('cpu')), 
@@ -163,7 +166,6 @@ if __name__ == '__main__':
     plt.xlabel('Iterations')
     plt.ylabel('Loss')
     plt.title('Milti-classes Classification : Loss')
-    plt.title('Loss')
 
     plt.subplot(224)
     plt.plot(range(1, len(_ACCTRA)+1), _ACCTRA, label='train')

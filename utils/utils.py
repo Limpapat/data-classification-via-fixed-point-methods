@@ -26,8 +26,14 @@ def get_data(csv_path:str, fearture_selection:list=[0,1], disp:bool=False, stdf:
     if len(split_ratio) == 2:
         _, data_test = train_test_split(df, test_size=split_ratio[0], random_state=42, shuffle=True)
         data_train, data_val = train_test_split(_, test_size=split_ratio[-1], random_state=42, shuffle=True)
+    elif len(split_ratio) == 1:
+        if split_ratio[0] != 1.:
+            _, data_test = train_test_split(df, test_size=split_ratio[0], random_state=42, shuffle=True)
+            data_train, data_val = train_test_split(_, test_size=split_ratio[-1], random_state=42, shuffle=True)
+        else:
+            data_test, data_train, data_val = df, df, df
     else:
-        raise ValueError('Invalid values: plaese assign split ratio list with 2 lenght')
+        raise ValueError('Invalid values: plaese assign split ratio list with lenght not greater than 2')
 
     X_train, X_val, X_test = data_train.iloc[:, fearture_selection].values, data_val.iloc[:, fearture_selection].values, data_test.iloc[:, fearture_selection].values
     y_train, y_val, y_test = data_train.iloc[:, 2].values, data_val.iloc[:, 2].values, data_test.iloc[:, 2].values
@@ -50,17 +56,14 @@ def get_data(csv_path:str, fearture_selection:list=[0,1], disp:bool=False, stdf:
         X_test_std[:,0] = (X_test[:,0] - X_test[:,0].mean()) / X_test[:,0].std()
         X_test_std[:,1] = (X_test[:,1] - X_test[:,1].mean()) / X_test[:,1].std()
 
-        print('train: ', X_train_std.shape, y_train.shape)
-        print('validation: ', X_val_std.shape, y_val.shape)
-        print('test: ', X_test_std.shape, y_test.shape)
-
         X, X_train, X_val, X_test = X_std, X_train_std, X_val_std, X_test_std
-    else:
-        print('train: ', X_train.shape, y_train.shape)
-        print('validation: ', X_val.shape, y_val.shape)
-        print('test: ', X_test.shape, y_test.shape)
 
     if disp:
+        print("\n--------- DISPLAY DATASET ---------")
+        print('| train shape:\t\t {} |'.format(X_train.shape))
+        print('| validation shape:\t {} |'.format(X_val.shape))
+        print('| test shape:\t\t {} |'.format(X_test.shape))
+        print("-----------------------------------\n")
         # data visualized
         plt.figure(figsize=(15,3))
         plt.subplot(141)
@@ -114,8 +117,8 @@ def get_data(csv_path:str, fearture_selection:list=[0,1], disp:bool=False, stdf:
 def plot_decision_regions(X, y, classifier, label=[-1,1], resolution=0.02):
 
     # setup marker generator and color map
-    markers = ('s', 'x', 'o', '^', 'v')
-    colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
+    markers = ('s', 'o', '^', 'v')
+    colors = ('red', 'blue', 'lightgreen', 'cyan')
     cmap = ListedColormap(colors[:len(np.unique(y))])
 
     # plot the decision surface
