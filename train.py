@@ -177,6 +177,7 @@ if __name__ == '__main__':
 
     plt.tight_layout()
     plt.show()
+    # plt.savefig('img/trained_results.png')
 
 
 
