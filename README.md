@@ -12,6 +12,6 @@ python experiment.py --test_data 'source/sample_generated_data.csv' --trained_mo
 ```
 ![This is an image](img/demo_experiment_results.png)
 # Plan updated:
-- Add opimizer i.e. ISFBA, PISFBA, IPFBA & related papers
-- Add experiment codes
+- Add forward-backward splitting optimizer (FBA)
+- Add other FBA type opimizers i.e. ISFBA, PISFBA, IPFBA & related papers
 - Write some documents
