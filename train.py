@@ -39,6 +39,18 @@ if __name__ == '__main__':
         default='MSE',
         help='Loss function, default is \'MSE\''
     )
+    parser.add_argument(
+        '--save',
+        type=str,
+        default=None,
+        help='Saved model\'s name, default is None. The trained model didn\'t be saved if --save is None'
+    )
+    parser.add_argument(
+        '--optimizer',
+        type=str,
+        default='SGD',
+        help='An optimizer name, default is \'SGD\''
+    )
     ### plan ###
     # add more argument
 
@@ -76,8 +88,11 @@ if __name__ == '__main__':
     ### Setting model & optimizer
     _n_features, _n_classes = X_train.shape[-1], torch.unique(y_train).shape[0]
     model = MLP(num_features=_n_features, num_classes=_n_classes, activation='softmax')
-    optimizer = optim.SGD(model.parameters(), lr=.2)
-    print("Optimizer: SGD")
+    if args.optimizer == 'SGD':
+        optimizer = optim.SGD(model.parameters(), lr=.2)
+    else:
+        raise ValueError(f"Invalid optimizer : optimizer {args.optimizer} not found : please check our optimizer supported")
+    print(f"Optimizer: {args.optimizer}")
 
     print("\n===== TRAINING =====\n")
     _LOSS, _ACCTRA, _ACCVAL = [], [], []
@@ -108,6 +123,21 @@ if __name__ == '__main__':
     elapsed_time = time.time() - start_time
     print("\nElapsed time: %.2fs" % (elapsed_time))
     print("===================\n")
+
+    ### Save model
+    if args.save is not None:
+        save_path = 'trained_models'
+        name_save = args.save + ".pth" if args.save.split('.')[-1] != 'pth' else name_save
+        torch.save({
+            'n_iters' : args.n_iteration,
+            'model_state_dict' : model.state_dict(),
+            'optimizer' : args.optimizer,
+            'optimizer_state_dict' : optimizer.state_dict(),
+            'loss' : _LOSS,
+            'train_acc' : _ACCTRA,
+            'validation_acc' : _ACCVAL,
+            'elapsed_time' : elapsed_time
+        }, os.path.join(save_path,name_save))
 
     #### Update later! ####
     label = [0,1, 2]
