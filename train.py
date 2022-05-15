@@ -176,8 +176,8 @@ if __name__ == '__main__':
     plt.legend()
 
     plt.tight_layout()
+    plt.savefig('img/trained_results.png')
     plt.show()
-    # plt.savefig('img/trained_results.png')
 
 
 
