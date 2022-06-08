@@ -1,11 +1,12 @@
 from model.model import MLP
 from utils.utils import get_data, plot_decision_regions
 from utils.functional import *
+from datetime import datetime
+from optim.optim import FBA
 import matplotlib.pyplot as plt
 import argparse
 import torch
 import os, sys, time
-from datetime import datetime
 import torch.optim as optim
 
 if __name__ == '__main__':
@@ -123,7 +124,10 @@ if __name__ == '__main__':
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate)
     elif args.optimizer == 'FBA':
         _splitting_type_method = True
-        # update later
+        optimizer = FBA(model.parameters(), lr=args.learning_rate, lam=args.reg_param, regtype=args.penalty, inertial=False)
+    elif args.optimizer == 'IFBA':
+        _splitting_type_method = True
+        optimizer = FBA(model.parameters(), lr=args.learning_rate, lam=args.reg_param, regtype=args.penalty, inertial=True)
     else:
         raise ValueError(f"Invalid optimizer : optimizer {args.optimizer} not found : please check our optimizer supported")
     print(f"Optimizer: \'{args.optimizer}\'")
@@ -142,7 +146,7 @@ if __name__ == '__main__':
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            loss_reg = sum(loss_reg_fn(p.clone()) for p in model.parameters()) if args.penalty is not None else 0.
+            loss_reg = sum(loss_reg_fn(p.detach()) for p in model.parameters()) if args.penalty is not None else 0.
             loss += args.reg_param * loss_reg
             _LOSS.append(loss.item())
         else:
