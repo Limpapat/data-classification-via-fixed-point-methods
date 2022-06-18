@@ -2,7 +2,7 @@ from model.model import MLP
 from utils.utils import get_data, plot_decision_regions, loadcseq
 from utils.functional import *
 from datetime import datetime
-from optim.optim import FBA
+from optim.optim import FBA, SFBA
 import matplotlib.pyplot as plt
 import argparse
 import torch
@@ -25,8 +25,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--disp',
-        type=bool,
-        default=False,
+        action="store_true",
         help='Display option to show dataset, default is False'
     )
     parser.add_argument(
@@ -124,6 +123,7 @@ if __name__ == '__main__':
 
     ### Setting model & optimizer
     _n_features, _n_classes = X_train.shape[-1], torch.unique(y_train).shape[0]
+    torch.manual_seed(0)
     model = MLP(num_features=_n_features, num_classes=_n_classes, activation='softmax')
     print(f"Optimizer: \'{args.optimizer}\'")
     print(f"\tLearning rate: {args.learning_rate}")
@@ -132,6 +132,8 @@ if __name__ == '__main__':
         print("\tControl sequence parameters: ")
         for k in cseq.keys():
             print(f"\t\t{k}: {cseq[k]}")
+    else:
+        cseq = {}
     if args.optimizer == 'SGD':
         _splitting_type_method = False
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate)
@@ -146,6 +148,22 @@ if __name__ == '__main__':
     elif args.optimizer == 'IFBA':
         _splitting_type_method = True
         optimizer = FBA(model.parameters(), 
+                        lr=args.learning_rate, 
+                        lam=args.reg_param, 
+                        regtype=args.penalty, 
+                        cseq=cseq,
+                        inertial=True)
+    elif args.optimizer == 'SFBA':
+        _splitting_type_method = True
+        optimizer = SFBA(model.parameters(), 
+                        lr=args.learning_rate, 
+                        lam=args.reg_param, 
+                        regtype=args.penalty, 
+                        cseq=cseq,
+                        inertial=False)
+    elif args.optimizer == 'ISFBA':
+        _splitting_type_method = True
+        optimizer = SFBA(model.parameters(), 
                         lr=args.learning_rate, 
                         lam=args.reg_param, 
                         regtype=args.penalty, 
@@ -215,42 +233,42 @@ if __name__ == '__main__':
             checkpoint_dict['reg_param'] = args.reg_param
         torch.save(checkpoint_dict, os.path.join(save_path,name_save))
 
-    #### Update later! ####
-    label = [0, 1, 2]
-    plt.figure(figsize=(10,8))
-    plt.subplot(221)
-    plot_decision_regions(X_train.to(torch.device('cpu')), 
-                        y_train.view(y_train.shape[0]).to(torch.device('cpu')), 
-                        classifier=model.to(torch.device('cpu')), 
-                        label=label)
-    plt.title('Train Set')
-    plt.legend()
+    if args.disp:
+        label = [0, 1, 2]
+        plt.figure(figsize=(10,8))
+        plt.subplot(221)
+        plot_decision_regions(X_train.to(torch.device('cpu')), 
+                            y_train.view(y_train.shape[0]).to(torch.device('cpu')), 
+                            classifier=model.to(torch.device('cpu')), 
+                            label=label)
+        plt.title('Train Set')
+        plt.legend()
 
-    plt.subplot(222)
-    plot_decision_regions(X_val.to(torch.device('cpu')), 
-                        y_val.view(y_val.shape[0]).to(torch.device('cpu')), 
-                        classifier=model.to(torch.device('cpu')), 
-                        label=label)
-    plt.title('Validation Set')
-    plt.legend()
+        plt.subplot(222)
+        plot_decision_regions(X_val.to(torch.device('cpu')), 
+                            y_val.view(y_val.shape[0]).to(torch.device('cpu')), 
+                            classifier=model.to(torch.device('cpu')), 
+                            label=label)
+        plt.title('Validation Set')
+        plt.legend()
 
-    plt.subplot(223)
-    plt.plot(range(1, len(_LOSS)+1), _LOSS, marker='.')
-    plt.xlabel('Iterations')
-    plt.ylabel('Loss')
-    plt.title('Milti-classes Classification : Loss')
+        plt.subplot(223)
+        plt.plot(range(1, len(_LOSS)+1), _LOSS, marker='.')
+        plt.xlabel('Iterations')
+        plt.ylabel('Loss')
+        plt.title('Milti-classes Classification : Loss')
 
-    plt.subplot(224)
-    plt.plot(range(1, len(_ACCTRA)+1), _ACCTRA, label='train')
-    plt.plot(range(1, len(_ACCVAL)+1), _ACCVAL, label='validation')
-    plt.xlabel('Iterations')
-    plt.ylabel('Accuracy')
-    plt.title('Milti-classes Classification : Accuracy')
-    plt.legend()
+        plt.subplot(224)
+        plt.plot(range(1, len(_ACCTRA)+1), _ACCTRA, label='train')
+        plt.plot(range(1, len(_ACCVAL)+1), _ACCVAL, label='validation')
+        plt.xlabel('Iterations')
+        plt.ylabel('Accuracy')
+        plt.title('Milti-classes Classification : Accuracy')
+        plt.legend()
 
-    plt.tight_layout()
-    plt.savefig('img/trained_results.png')
-    plt.show()
+        plt.tight_layout()
+        plt.savefig('img/trained_results.png')
+        plt.show()
 
 
 
