@@ -1,11 +1,11 @@
 # utils.py
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-import torch
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import os
+import torch
+import os, json
 
 def get_data(csv_path:str, fearture_selection:list=[0,1], disp:bool=False, stdf:bool=True, split_ratio:list=[.1,.3]):
     """
@@ -146,6 +146,12 @@ def plot_decision_regions(X, y, classifier, label=[-1,1], resolution=0.02):
                     edgecolor='black',
                     marker=markers[idx], 
                     label=label[idx])
+
+def loadcseq(path:str):
+    f = open(path, 'r')
+    d = json.loads(f.read())
+    f.close()
+    return d
 
 if __name__ == '__main__':
     path = os.path.join(os.getcwd(), 'source', 'sample_generated_data.csv')

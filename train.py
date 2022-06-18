@@ -1,5 +1,5 @@
 from model.model import MLP
-from utils.utils import get_data, plot_decision_regions
+from utils.utils import get_data, plot_decision_regions, loadcseq
 from utils.functional import *
 from datetime import datetime
 from optim.optim import FBA
@@ -35,6 +35,12 @@ if __name__ == '__main__':
         nargs='+',
         default=[.1, .3],
         help='List of ratio to split dataset, default is [.1, .3] which means get test 10%% data of dataset and get validation 30%% data of remains'
+    )
+    parser.add_argument(
+        '-csd', '--control_sequence_directory',
+        type=str,
+        default=None,
+        help='A control sequences info directory, i.e. \'./cseq.json\', default is None'
     )
     parser.add_argument(
         '-l', '--loss',
@@ -119,18 +125,34 @@ if __name__ == '__main__':
     ### Setting model & optimizer
     _n_features, _n_classes = X_train.shape[-1], torch.unique(y_train).shape[0]
     model = MLP(num_features=_n_features, num_classes=_n_classes, activation='softmax')
+    print(f"Optimizer: \'{args.optimizer}\'")
+    print(f"\tLearning rate: {args.learning_rate}")
+    if args.control_sequence_directory is not None:
+        cseq = loadcseq(args.control_sequence_directory)
+        print("\tControl sequence parameters: ")
+        for k in cseq.keys():
+            print(f"\t\t{k}: {cseq[k]}")
     if args.optimizer == 'SGD':
         _splitting_type_method = False
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate)
     elif args.optimizer == 'FBA':
         _splitting_type_method = True
-        optimizer = FBA(model.parameters(), lr=args.learning_rate, lam=args.reg_param, regtype=args.penalty, inertial=False)
+        optimizer = FBA(model.parameters(), 
+                        lr=args.learning_rate, 
+                        lam=args.reg_param, 
+                        regtype=args.penalty, 
+                        cseq=cseq,
+                        inertial=False)
     elif args.optimizer == 'IFBA':
         _splitting_type_method = True
-        optimizer = FBA(model.parameters(), lr=args.learning_rate, lam=args.reg_param, regtype=args.penalty, inertial=True)
+        optimizer = FBA(model.parameters(), 
+                        lr=args.learning_rate, 
+                        lam=args.reg_param, 
+                        regtype=args.penalty, 
+                        cseq=cseq,
+                        inertial=True)
     else:
         raise ValueError(f"Invalid optimizer : optimizer {args.optimizer} not found : please check our optimizer supported")
-    print(f"Optimizer: \'{args.optimizer}\'")
 
     print("\n=========== TRAINING ===========\n")
     _LOSS, _ACCTRA, _ACCVAL = [], [], []

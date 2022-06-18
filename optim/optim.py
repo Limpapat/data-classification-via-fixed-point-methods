@@ -12,7 +12,7 @@ import torch
             where PROX_f is a proximity operator of f
 """
 class FBA(Optimizer):
-    def __init__(self, params, lr=required, lam=1., regtype=None, iter=1, inertial=False):
+    def __init__(self, params, lr:float=required, cseq:dict={}, lam:float=1., regtype:str=None, iter:int=1, inertial:bool=False):
         if regtype not in [None, "l1", "l2", "elastic"]:
             raise ValueError("Invalid regularization method type: {}".format(regtype))
         if lr is not required and lr < 0.:
@@ -21,9 +21,15 @@ class FBA(Optimizer):
         self.regtype = regtype
         self.inertial = inertial
         self.param_copy = []
-        self.alpha = lambda n : sqrt(1+4*n*n)/(1+sqrt(1+4*(n+1)*(n+1)))
+        if 'alpha' in cseq.keys():
+            self.alpha = lambda n : eval(cseq['alpha'])
+        else: 
+            self.alpha = lambda n : 1.
         if inertial:
-            self.theta = lambda n : 0.5**n
+            if 'theta' in cseq.keys():
+                self.theta = lambda n : eval(cseq['theta'])
+            else:
+                self.theta = lambda n : 0.5**n
         super(FBA, self).__init__(params, defaults)
 
     def __setstate__(self, state):
