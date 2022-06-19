@@ -182,10 +182,16 @@ if __name__ == '__main__':
         score = torch.where(torch.argmax(probas, dim=1) == y_train, 1, 0).sum()
         _ACCTRA.append(score/probas.shape[0])
         if _splitting_type_method:
+            # --------------------------------------------------
+            def closure():
+                optimizer.zero_grad()
+                probas = model(X_train)
+                loss = loss_fn(probas, y_train)
+                loss.backward()
+                return loss
+            # --------------------------------------------------
+            optimizer.step(closure)
             loss = loss_fn(probas, y_train)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
             loss_reg = sum(loss_reg_fn(p.detach()) for p in model.parameters()) if args.penalty is not None else 0.
             loss += args.reg_param * loss_reg
             _LOSS.append(loss.item())
@@ -195,7 +201,7 @@ if __name__ == '__main__':
             _LOSS.append(loss.item())
             optimizer.zero_grad()
             loss.backward()
-            optimizer.step()
+            x = optimizer.step()
         ### validation
         with torch.no_grad():
             model.eval()

@@ -13,11 +13,11 @@ class FBA(Optimizer):
                 regtype : regularization method type viz : l1 (L1-regularization), l2 (L2-regularization), elastic (Elastic-Net-regularization)
                 iter : initial iteration step : an integer number, default is 1
                 inertial : inertial step : boolean, default is False
-            Math Equation:
+            .: Math::
                 y_n = x_n + theta_n * (x_n - x_{n-1})                   ... [ if inertial = True ]
                 x_{n+1} = (1 - alpha_n) * x_n + alpha_n * T(y_n)
                 where T(x) = PROX_lr*lam*G(x - lr*grad(x)), and PROX_f is a proximity operator of f
-            Ref. book: (Chapter 28) <https://books.google.co.th/books/about/Convex_Analysis_and_Monotone_Operator_Th.html?id=cxL3jL7ONjQC&redir_esc=y>
+            .: Ref. book:: (Chapter 28) <https://books.google.co.th/books/about/Convex_Analysis_and_Monotone_Operator_Th.html?id=cxL3jL7ONjQC&redir_esc=y>
     """
     def __init__(self, params, lr:float=required, cseq:dict={}, lam:float=1., regtype:str=None, inititer:int=1, inertial:bool=False):
         if regtype not in [None, "l1", "l2", "elastic"]:
@@ -87,14 +87,14 @@ class FBA(Optimizer):
                 p.add_(tp, alpha=self.alpha(state['iter']))
     
     def step(self, closure=None):
+        state = self.state
+        if self.inertial:
+            self.inertial_step()
         loss = None
         if closure is not None:
             with torch.enable_grad():
-                loss = closure
-        state = self.state
+                loss = closure()
         self.update()
-        if self.inertial:
-            self.inertial_step()
         state['iter'] += 1
         return loss
 
@@ -109,16 +109,16 @@ class SFBA(FBA):
                 regtype : regularization method type viz : l1 (L1-regularization), l2 (L2-regularization), elastic (Elastic-Net-regularization)
                 iter : initial iteration step : an integer number, default is 1
                 inertial : inertial step : boolean, default is False
-            Math Equation:
+            .: Math::
                 y_n = x_n + theta_n * (x_n - x_{n-1})                   ... [ if inertial = True ]
                 z_n = (1 - alpha_n) * y_n + alpha_n * T(y_n)
                 x_{n+1} = (1 - beta_n) * T(y_n) + beta_n * T(z_n)
                 where T(x) = PROX_lr*lam*G(x - lr*grad(x)), and PROX_f is a proximity operator of f
-            Ref. paper: <http://www.doiserbia.nb.rs/img/doi/0354-5180/2021/0354-51802103771B.pdf>
+            .: Ref. paper:: <http://www.doiserbia.nb.rs/img/doi/0354-5180/2021/0354-51802103771B.pdf>
     """
-    def __init__(self, params, lr:float=required, cseq:dict={}, lam:float=1., regtype:str=None, iter:int=1, inertial:bool=False):
+    def __init__(self, params, lr:float=required, cseq:dict={}, lam:float=1., regtype:str=None, inititer:int=1, inertial:bool=False):
         if 'beta' in cseq.keys():
             self.beta = lambda n : eval(cseq['beta'])
         else: 
             self.beta = lambda n : 1.
-        super(SFBA, self).__init__(params, lr, cseq, lam, regtype, iter, inertial)
+        super(SFBA, self).__init__(params, lr, cseq, lam, regtype, inititer, inertial)
