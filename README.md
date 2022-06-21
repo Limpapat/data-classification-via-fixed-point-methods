@@ -8,17 +8,25 @@ Experimentation on various iterative fixed point methods for data classification
 # TODO:
 - Write a document detail
 
+# How to run code:
+```bash
+cd <repository_path>
+conda activate <your_env_name>
+python <file_name>
+# have fun :)
+```
+
 # Train demo command
 * Sample train SGD with default learning rate = 0.2
-```
+```python
 python train.py --data 'source/sample_generated_data.csv' --loss MCE
 ```
 * Sample train ISFBA with L1-regularization & learning rate = 2.0 & control sequences defined as in ./cseq.json
-```
+```python
 python train.py --data 'source/sample_generated_data.csv' --loss MCE --optimizer ISFBA -p l1 -lr 2. -csd ./cseq.json
 ```
 # Experiment demo command
-```
+```python
 python experiment.py --test_data 'source/sample_generated_data.csv' --trained_model demomodel.pth --n_test .1
 ```
 # Experimantal results
