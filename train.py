@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     ### Setting model & optimizer
     _n_features, _n_classes = X_train.shape[-1], torch.unique(y_train).shape[0]
-    torch.manual_seed(0)
+    # torch.manual_seed(0)
     model = MLP(num_features=_n_features, num_classes=_n_classes, activation='softmax')
     print(f"Optimizer: \'{args.optimizer}\'")
     print(f"\tLearning rate: {args.learning_rate}")
