@@ -2,7 +2,7 @@ from model.model import MLP
 from utils.utils import get_data, plot_decision_regions, loadcseq
 from utils.functional import *
 from datetime import datetime
-from optim.optim import FBA, SFBA
+from optim.optim import FBA, SFBA, PFBA, ParallelSFBA
 import matplotlib.pyplot as plt
 import argparse
 import torch
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     model = MLP(num_features=_n_features, num_classes=_n_classes, activation='softmax')
     print(f"Optimizer: \'{args.optimizer}\'")
     print(f"\tLearning rate: {args.learning_rate}")
-    if args.control_sequence_directory is not None:
+    if args.control_sequence_directory is not None and args.optimizer != 'SGD':
         cseq = loadcseq(args.control_sequence_directory)
         print("\tControl sequence parameters: ")
         for k in cseq.keys():
@@ -161,9 +161,41 @@ if __name__ == '__main__':
                         regtype=args.penalty, 
                         cseq=cseq,
                         inertial=False)
+    elif args.optimizer == 'ParallelSFBA':
+        _splitting_type_method = True
+        optimizer = ParallelSFBA(model.parameters(), 
+                        lr=args.learning_rate, 
+                        lam=args.reg_param, 
+                        regtype=args.penalty, 
+                        cseq=cseq,
+                        inertial=False)
+    elif args.optimizer == 'PFBA':
+        _splitting_type_method = True
+        optimizer = PFBA(model.parameters(), 
+                        lr=args.learning_rate, 
+                        lam=args.reg_param, 
+                        regtype=args.penalty, 
+                        cseq=cseq,
+                        inertial=False)
     elif args.optimizer == 'ISFBA':
         _splitting_type_method = True
         optimizer = SFBA(model.parameters(), 
+                        lr=args.learning_rate, 
+                        lam=args.reg_param, 
+                        regtype=args.penalty, 
+                        cseq=cseq,
+                        inertial=True)
+    elif args.optimizer == 'ParallelISFBA':
+        _splitting_type_method = True
+        optimizer = ParallelSFBA(model.parameters(), 
+                        lr=args.learning_rate, 
+                        lam=args.reg_param, 
+                        regtype=args.penalty, 
+                        cseq=cseq,
+                        inertial=True)
+    elif args.optimizer == 'IPFBA':
+        _splitting_type_method = True
+        optimizer = PFBA(model.parameters(), 
                         lr=args.learning_rate, 
                         lam=args.reg_param, 
                         regtype=args.penalty, 
@@ -176,6 +208,8 @@ if __name__ == '__main__':
     _LOSS, _ACCTRA, _ACCVAL = [], [], []
     start_time = time.time()
     for epoch in range(args.n_iteration):
+        # for var_name in optimizer.state_dict():
+        #     print(var_name, '\t', optimizer.state_dict()[var_name])
         ### train
         model.train()
         probas = model(X_train)
