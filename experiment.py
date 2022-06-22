@@ -78,6 +78,7 @@ def experiment(data:str='source/sample_generated_data.csv',
         plt.tight_layout()
         plt.savefig('img/experiment_results.png')
         plt.show()
+    return acc_test, model, _LOSS, _ACCTRA, _ACCVAL
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
