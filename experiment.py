@@ -48,9 +48,9 @@ def experiment(data:str='source/sample_generated_data.csv',
     print('Accuracy: ', acc_test)
     print("================================\n")
 
+    _LOSS, _ACCTRA, _ACCVAL = checkpoint['loss'], checkpoint['train_acc'], checkpoint['validation_acc']
     ### Display results
     if disp:
-        _LOSS, _ACCTRA, _ACCVAL = checkpoint['loss'], checkpoint['train_acc'], checkpoint['validation_acc']
         label = [0, 1, 2]
         plt.figure(figsize=(15,4))
         plt.subplot(131)
