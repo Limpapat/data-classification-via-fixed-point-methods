@@ -19,15 +19,15 @@ python <file_name>
 # Train demo command
 * Sample train SGD with default learning rate = 0.2
 ```python
-python train.py --data 'source/sample_generated_data.csv' --loss MCE
+python train.py --data source/sample_generated_data.csv --loss MCE
 ```
 * Sample train ISFBA with L1-regularization & learning rate = 2.0 & control sequences defined as in ./cseq.json
 ```python
-python train.py --data 'source/sample_generated_data.csv' --loss MCE --optimizer ISFBA -p l1 -lr 2. -csd ./cseq.json
+python train.py --data source/sample_generated_data.csv --loss MCE --optimizer ISFBA -p l1 -lr 2. -csd ./cseq.json
 ```
 # Experiment demo command
 ```python
-python experiment.py --test_data 'source/sample_generated_data.csv' --trained_model demomodel.pth --n_test .1
+python experiment.py --test_data source/sample_generated_data.csv --trained_model demomodel.pth --n_test .1
 ```
 # Experimantal results
 - without Regularization:
