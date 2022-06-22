@@ -4,40 +4,16 @@ import matplotlib.pyplot as plt
 import torch
 import argparse, os
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-d', '--test_data',
-        type=str,
-        default='',
-        help='Dataset directory'
-    )
-    parser.add_argument(
-        '--disp',
-        type=bool,
-        default=True,
-        help='Display option to show experiment results, default is True'
-    )
-    parser.add_argument(
-        '-n', '--n_test',
-        type=float,
-        default=1.,
-        help='Number of test data, default is 1. which means get test 100%% data of dataset'
-    )
-    parser.add_argument(
-        '-m', '--trained_model',
-        type=str,
-        default='demomodel.pth',
-        help='A trained model\'s name, default is \'demomodel.pth\''
-    )
-
-    args = parser.parse_args()
+def experiment(data:str='source/sample_generated_data.csv',
+                n_test:float=.1,
+                trained_model:str='demomodel.pth',
+                disp=False):
     print("\n========= INITAILIZING =========\n")
-    print(f"Data directory : \'{args.test_data}\'")
+    print(f"Data directory : \'{data}\'")
 
     ### Get data
-    if os.path.isfile(args.test_data):
-        X, y = get_data(csv_path=args.test_data, split_ratio=[args.n_test], disp=False)
+    if os.path.isfile(data):
+        X, y = get_data(csv_path=data, split_ratio=[n_test], disp=False)
     else:
         raise ValueError('Invalid data direcory')
     
@@ -51,7 +27,7 @@ if __name__ == '__main__':
 
     ### Load trained model
     model_saved_path = 'trained_models'
-    args_checkpoint = os.path.join(model_saved_path, args.trained_model)
+    args_checkpoint = os.path.join(model_saved_path, trained_model)
     if os.path.isfile(args_checkpoint):
         checkpoint = torch.load(args_checkpoint, map_location=device)
         print('Trained model: ', checkpoint['name'])
@@ -60,7 +36,7 @@ if __name__ == '__main__':
         model = MLP(num_features=_n_features, num_classes=_n_classes, activation='softmax')
         model.load_state_dict(checkpoint['model_state_dict'])
     else:
-        raise ValueError('Invalid name : trained model file name {} not found on {}'.format(args.trained_model, model_saved_path))
+        raise ValueError('Invalid name : trained model file name {} not found on {}'.format(trained_model, model_saved_path))
 
     ### Experiment results
     print("\n====== EXPERIMENT RESULTS ======\n")
@@ -73,7 +49,7 @@ if __name__ == '__main__':
     print("================================\n")
 
     ### Display results
-    if args.disp:
+    if disp:
         _LOSS, _ACCTRA, _ACCVAL = checkpoint['loss'], checkpoint['train_acc'], checkpoint['validation_acc']
         label = [0, 1, 2]
         plt.figure(figsize=(15,4))
@@ -102,3 +78,36 @@ if __name__ == '__main__':
         plt.tight_layout()
         plt.savefig('img/experiment_results.png')
         plt.show()
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-d', '--test_data',
+        type=str,
+        default='',
+        help='Dataset directory'
+    )
+    parser.add_argument(
+        '--disp',
+        action="store_false",
+        help='Display option to show experiment results, default is True'
+    )
+    parser.add_argument(
+        '-n', '--n_test',
+        type=float,
+        default=1.,
+        help='Number of test data, default is 1. which means get test 100%% data of dataset'
+    )
+    parser.add_argument(
+        '-m', '--trained_model',
+        type=str,
+        default='demomodel.pth',
+        help='A trained model\'s name, default is \'demomodel.pth\''
+    )
+
+    args = parser.parse_args()
+    experiment(data=args.test_data,
+                n_test=args.n_test,
+                trained_model=args.trained_model,
+                disp=args.disp)
+    

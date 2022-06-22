@@ -9,6 +9,247 @@ import torch
 import os, sys, time
 import torch.optim as optim
 
+def train(data:str='source/sample_generated_data.csv', 
+        split_ratio:list=[.1, .3],
+        disp:bool=False,
+        args_loss:str='MCE',
+        args_optimizer:str='FBA',
+        penalty:str='l1',
+        reg_param:float=1e-3,
+        learning_rate:float=2.,
+        control_sequence_directory:str='./cseq.json',
+        n_iteration:int=100,
+        args_save:str=None):
+    print("\n========= INITAILIZING =========\n")
+    print(f"Data directory : \'{data}\'")
+    if os.path.isfile(data):
+        X, y = get_data(csv_path=data, split_ratio=split_ratio, disp=disp)
+    else:
+        raise ValueError('Invalid data direcory')
+    
+    device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+    X_train, X_val, X_test = X
+    y_train, y_val, y_test = y
+
+    ### Convert array to tensor
+    X_train = torch.tensor(X_train, dtype=torch.float32, device=device)
+    X_val = torch.tensor(X_val, dtype=torch.float32, device=device)
+    X_test = torch.tensor(X_test, dtype=torch.float32, device=device)
+    y_train = torch.tensor(y_train, dtype=torch.float32, device=device).view(-1).long()
+    y_val = torch.tensor(y_val, dtype=torch.float32, device=device).view(-1).long()
+    y_test = torch.tensor(y_test, dtype=torch.float32, device=device).view(-1).long()
+
+    ### Setting loss
+    print(f"Loss : \'{args_loss}\'")
+    if args_loss == 'MSE':
+        loss_fn = torch.nn.MSELoss()
+    elif args_loss == 'BCE':
+        loss_fn = torch.nn.BCEloss()
+    elif args_loss == 'MCE':
+        loss_fn = torch.nn.CrossEntropyLoss()
+    else:
+        raise ValueError('Unsupported loss : loss should be in [\'MSE\', \'BCE\', \'MCE\']')
+    
+    if penalty is not None:
+        print(f"Regularization : \'{penalty}\'")
+        print(f"Regularization parameter : \'{reg_param}\'")
+        if penalty == 'l1':
+            loss_reg_fn = l1_fn
+        elif penalty == 'l2':
+            loss_reg_fn = l2_fn
+        else:
+            raise ValueError('Unsupported penalty : penalty should be in [\'l1\', \'l2\', \'None\']')
+
+    ### Setting model & optimizer
+    _n_features, _n_classes = X_train.shape[-1], torch.unique(y_train).shape[0]
+    # torch.manual_seed(0)
+    model = MLP(num_features=_n_features, num_classes=_n_classes, activation='softmax')
+    print(f"Optimizer: \'{args_optimizer}\'")
+    print(f"\tLearning rate: {learning_rate}")
+    if control_sequence_directory is not None and args_optimizer != 'SGD':
+        cseq = loadcseq(control_sequence_directory)
+        print("\tControl sequence parameters: ")
+        for k in cseq.keys():
+            print(f"\t\t{k}: {cseq[k]}")
+    else:
+        cseq = {}
+    if args_optimizer == 'SGD':
+        _splitting_type_method = False
+        optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+    elif args_optimizer == 'FBA':
+        _splitting_type_method = True
+        optimizer = FBA(model.parameters(), 
+                        lr=learning_rate, 
+                        lam=reg_param, 
+                        regtype=penalty, 
+                        cseq=cseq,
+                        inertial=False)
+    elif args_optimizer == 'IFBA':
+        _splitting_type_method = True
+        optimizer = FBA(model.parameters(), 
+                        lr=learning_rate, 
+                        lam=reg_param, 
+                        regtype=penalty, 
+                        cseq=cseq,
+                        inertial=True)
+    elif args_optimizer == 'SFBA':
+        _splitting_type_method = True
+        optimizer = SFBA(model.parameters(), 
+                        lr=learning_rate, 
+                        lam=reg_param, 
+                        regtype=penalty, 
+                        cseq=cseq,
+                        inertial=False)
+    elif args_optimizer == 'ParallelSFBA':
+        _splitting_type_method = True
+        optimizer = ParallelSFBA(model.parameters(), 
+                        lr=learning_rate, 
+                        lam=reg_param, 
+                        regtype=penalty, 
+                        cseq=cseq,
+                        inertial=False)
+    elif args_optimizer == 'PFBA':
+        _splitting_type_method = True
+        optimizer = PFBA(model.parameters(), 
+                        lr=learning_rate, 
+                        lam=reg_param, 
+                        regtype=penalty, 
+                        cseq=cseq,
+                        inertial=False)
+    elif args_optimizer == 'ISFBA':
+        _splitting_type_method = True
+        optimizer = SFBA(model.parameters(), 
+                        lr=learning_rate, 
+                        lam=reg_param, 
+                        regtype=penalty, 
+                        cseq=cseq,
+                        inertial=True)
+    elif args_optimizer == 'ParallelISFBA':
+        _splitting_type_method = True
+        optimizer = ParallelSFBA(model.parameters(), 
+                        lr=learning_rate, 
+                        lam=reg_param, 
+                        regtype=penalty, 
+                        cseq=cseq,
+                        inertial=True)
+    elif args_optimizer == 'IPFBA':
+        _splitting_type_method = True
+        optimizer = PFBA(model.parameters(), 
+                        lr=learning_rate, 
+                        lam=reg_param, 
+                        regtype=penalty, 
+                        cseq=cseq,
+                        inertial=True)
+    else:
+        raise ValueError(f"Invalid optimizer : optimizer {args_optimizer} not found : please check our optimizer supported")
+
+    print("\n=========== TRAINING ===========\n")
+    _LOSS, _ACCTRA, _ACCVAL = [], [], []
+    start_time = time.time()
+    for epoch in range(n_iteration):
+        # for var_name in optimizer.state_dict():
+        #     print(var_name, '\t', optimizer.state_dict()[var_name])
+        ### train
+        model.train()
+        probas = model(X_train)
+        score = torch.where(torch.argmax(probas, dim=1) == y_train, 1, 0).sum()
+        _ACCTRA.append(score/probas.shape[0])
+        if _splitting_type_method:
+            # --------------------------------------------------
+            def closure():
+                optimizer.zero_grad()
+                probas = model(X_train)
+                loss = loss_fn(probas, y_train)
+                loss.backward()
+                return loss
+            # --------------------------------------------------
+            optimizer.step(closure)
+            loss = loss_fn(probas, y_train)
+            loss_reg = sum(loss_reg_fn(p.detach()) for p in model.parameters()) if penalty is not None else 0.
+            loss += reg_param * loss_reg
+            _LOSS.append(loss.item())
+        else:
+            loss_reg = sum(loss_reg_fn(p) for p in model.parameters()) if penalty is not None else 0.
+            loss = loss_fn(probas, y_train) + reg_param * loss_reg
+            _LOSS.append(loss.item())
+            optimizer.zero_grad()
+            loss.backward()
+            x = optimizer.step()
+        ### validation
+        with torch.no_grad():
+            model.eval()
+            output = model(X_val)
+            score = torch.where(torch.argmax(output, dim=1) == y_val, 1, 0).sum()
+            _ACCVAL.append(score/output.shape[0])
+        if (epoch+1) % 10 == 0:
+            print('Epoch: %03d/%03d' % ((epoch+1), n_iteration), end="")
+            print(' | Train acc: %.2f' % (_ACCTRA[-1]), end="")
+            print(' | Loss: %.3f' % _LOSS[-1], end="")
+            print(' | Val acc: %.2f' % (_ACCVAL[-1]))
+    
+    elapsed_time = time.time() - start_time
+    print("\nElapsed time: %.2fs" % (elapsed_time))
+    print("================================\n")
+
+    ### Save model
+    if args_save is not None:
+        save_path = 'trained_models'
+        name_save = args_save + ".pth" if args_save.split('.')[-1] != 'pth' else name_save
+        checkpoint_dict = {
+            'n_iters' : n_iteration,
+            'name' : name_save,
+            'time_created' : datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'model_state_dict' : model.state_dict(),
+            'optimizer' : args_optimizer,
+            'optimizer_state_dict' : optimizer.state_dict(),
+            'loss' : _LOSS,
+            'train_acc' : _ACCTRA,
+            'validation_acc' : _ACCVAL,
+            'elapsed_time' : elapsed_time
+        }
+        if penalty is not None:
+            checkpoint_dict['penalty'] = penalty
+            checkpoint_dict['reg_param'] = reg_param
+        torch.save(checkpoint_dict, os.path.join(save_path,name_save))
+
+    if disp:
+        label = [0, 1, 2]
+        plt.figure(figsize=(10,8))
+        plt.subplot(221)
+        plot_decision_regions(X_train.to(torch.device('cpu')), 
+                            y_train.view(y_train.shape[0]).to(torch.device('cpu')), 
+                            classifier=model.to(torch.device('cpu')), 
+                            label=label)
+        plt.title('Train Set')
+        plt.legend()
+
+        plt.subplot(222)
+        plot_decision_regions(X_val.to(torch.device('cpu')), 
+                            y_val.view(y_val.shape[0]).to(torch.device('cpu')), 
+                            classifier=model.to(torch.device('cpu')), 
+                            label=label)
+        plt.title('Validation Set')
+        plt.legend()
+
+        plt.subplot(223)
+        plt.plot(range(1, len(_LOSS)+1), _LOSS, marker='.')
+        plt.xlabel('Iterations')
+        plt.ylabel('Loss')
+        plt.title('Milti-classes Classification : Loss')
+
+        plt.subplot(224)
+        plt.plot(range(1, len(_ACCTRA)+1), _ACCTRA, label='train')
+        plt.plot(range(1, len(_ACCVAL)+1), _ACCVAL, label='validation')
+        plt.xlabel('Iterations')
+        plt.ylabel('Accuracy')
+        plt.title('Milti-classes Classification : Accuracy')
+        plt.legend()
+
+        plt.tight_layout()
+        plt.savefig('img/trained_results.png')
+        plt.show()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -81,235 +322,14 @@ if __name__ == '__main__':
     # add more argument
 
     args = parser.parse_args()
-    print("\n========= INITAILIZING =========\n")
-    print(f"Data directory : \'{args.data}\'")
-    if os.path.isfile(args.data):
-        X, y = get_data(csv_path=args.data, split_ratio=args.split_ratio, disp=args.disp)
-    else:
-        raise ValueError('Invalid data direcory')
-    
-    device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
-    X_train, X_val, X_test = X
-    y_train, y_val, y_test = y
-
-    ### Convert array to tensor
-    X_train = torch.tensor(X_train, dtype=torch.float32, device=device)
-    X_val = torch.tensor(X_val, dtype=torch.float32, device=device)
-    X_test = torch.tensor(X_test, dtype=torch.float32, device=device)
-    y_train = torch.tensor(y_train, dtype=torch.float32, device=device).view(-1).long()
-    y_val = torch.tensor(y_val, dtype=torch.float32, device=device).view(-1).long()
-    y_test = torch.tensor(y_test, dtype=torch.float32, device=device).view(-1).long()
-
-    ### Setting loss
-    print(f"Loss : \'{args.loss}\'")
-    if args.loss == 'MSE':
-        loss_fn = torch.nn.MSELoss()
-    elif args.loss == 'BCE':
-        loss_fn = torch.nn.BCEloss()
-    elif args.loss == 'MCE':
-        loss_fn = torch.nn.CrossEntropyLoss()
-    else:
-        raise ValueError('Unsupported loss : loss should be in [\'MSE\', \'BCE\', \'MCE\']')
-    
-    if args.penalty is not None:
-        print(f"Regularization : \'{args.penalty}\'")
-        print(f"Regularization parameter : \'{args.reg_param}\'")
-        if args.penalty == 'l1':
-            loss_reg_fn = l1_fn
-        elif args.penalty == 'l2':
-            loss_reg_fn = l2_fn
-        else:
-            raise ValueError('Unsupported penalty : penalty should be in [\'l1\', \'l2\', \'None\']')
-
-    ### Setting model & optimizer
-    _n_features, _n_classes = X_train.shape[-1], torch.unique(y_train).shape[0]
-    # torch.manual_seed(0)
-    model = MLP(num_features=_n_features, num_classes=_n_classes, activation='softmax')
-    print(f"Optimizer: \'{args.optimizer}\'")
-    print(f"\tLearning rate: {args.learning_rate}")
-    if args.control_sequence_directory is not None and args.optimizer != 'SGD':
-        cseq = loadcseq(args.control_sequence_directory)
-        print("\tControl sequence parameters: ")
-        for k in cseq.keys():
-            print(f"\t\t{k}: {cseq[k]}")
-    else:
-        cseq = {}
-    if args.optimizer == 'SGD':
-        _splitting_type_method = False
-        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate)
-    elif args.optimizer == 'FBA':
-        _splitting_type_method = True
-        optimizer = FBA(model.parameters(), 
-                        lr=args.learning_rate, 
-                        lam=args.reg_param, 
-                        regtype=args.penalty, 
-                        cseq=cseq,
-                        inertial=False)
-    elif args.optimizer == 'IFBA':
-        _splitting_type_method = True
-        optimizer = FBA(model.parameters(), 
-                        lr=args.learning_rate, 
-                        lam=args.reg_param, 
-                        regtype=args.penalty, 
-                        cseq=cseq,
-                        inertial=True)
-    elif args.optimizer == 'SFBA':
-        _splitting_type_method = True
-        optimizer = SFBA(model.parameters(), 
-                        lr=args.learning_rate, 
-                        lam=args.reg_param, 
-                        regtype=args.penalty, 
-                        cseq=cseq,
-                        inertial=False)
-    elif args.optimizer == 'ParallelSFBA':
-        _splitting_type_method = True
-        optimizer = ParallelSFBA(model.parameters(), 
-                        lr=args.learning_rate, 
-                        lam=args.reg_param, 
-                        regtype=args.penalty, 
-                        cseq=cseq,
-                        inertial=False)
-    elif args.optimizer == 'PFBA':
-        _splitting_type_method = True
-        optimizer = PFBA(model.parameters(), 
-                        lr=args.learning_rate, 
-                        lam=args.reg_param, 
-                        regtype=args.penalty, 
-                        cseq=cseq,
-                        inertial=False)
-    elif args.optimizer == 'ISFBA':
-        _splitting_type_method = True
-        optimizer = SFBA(model.parameters(), 
-                        lr=args.learning_rate, 
-                        lam=args.reg_param, 
-                        regtype=args.penalty, 
-                        cseq=cseq,
-                        inertial=True)
-    elif args.optimizer == 'ParallelISFBA':
-        _splitting_type_method = True
-        optimizer = ParallelSFBA(model.parameters(), 
-                        lr=args.learning_rate, 
-                        lam=args.reg_param, 
-                        regtype=args.penalty, 
-                        cseq=cseq,
-                        inertial=True)
-    elif args.optimizer == 'IPFBA':
-        _splitting_type_method = True
-        optimizer = PFBA(model.parameters(), 
-                        lr=args.learning_rate, 
-                        lam=args.reg_param, 
-                        regtype=args.penalty, 
-                        cseq=cseq,
-                        inertial=True)
-    else:
-        raise ValueError(f"Invalid optimizer : optimizer {args.optimizer} not found : please check our optimizer supported")
-
-    print("\n=========== TRAINING ===========\n")
-    _LOSS, _ACCTRA, _ACCVAL = [], [], []
-    start_time = time.time()
-    for epoch in range(args.n_iteration):
-        # for var_name in optimizer.state_dict():
-        #     print(var_name, '\t', optimizer.state_dict()[var_name])
-        ### train
-        model.train()
-        probas = model(X_train)
-        score = torch.where(torch.argmax(probas, dim=1) == y_train, 1, 0).sum()
-        _ACCTRA.append(score/probas.shape[0])
-        if _splitting_type_method:
-            # --------------------------------------------------
-            def closure():
-                optimizer.zero_grad()
-                probas = model(X_train)
-                loss = loss_fn(probas, y_train)
-                loss.backward()
-                return loss
-            # --------------------------------------------------
-            optimizer.step(closure)
-            loss = loss_fn(probas, y_train)
-            loss_reg = sum(loss_reg_fn(p.detach()) for p in model.parameters()) if args.penalty is not None else 0.
-            loss += args.reg_param * loss_reg
-            _LOSS.append(loss.item())
-        else:
-            loss_reg = sum(loss_reg_fn(p) for p in model.parameters()) if args.penalty is not None else 0.
-            loss = loss_fn(probas, y_train) + args.reg_param * loss_reg
-            _LOSS.append(loss.item())
-            optimizer.zero_grad()
-            loss.backward()
-            x = optimizer.step()
-        ### validation
-        with torch.no_grad():
-            model.eval()
-            output = model(X_val)
-            score = torch.where(torch.argmax(output, dim=1) == y_val, 1, 0).sum()
-            _ACCVAL.append(score/output.shape[0])
-        if (epoch+1) % 10 == 0:
-            print('Epoch: %03d/%03d' % ((epoch+1), args.n_iteration), end="")
-            print(' | Train acc: %.2f' % (_ACCTRA[-1]), end="")
-            print(' | Loss: %.3f' % _LOSS[-1], end="")
-            print(' | Val acc: %.2f' % (_ACCVAL[-1]))
-    
-    elapsed_time = time.time() - start_time
-    print("\nElapsed time: %.2fs" % (elapsed_time))
-    print("================================\n")
-
-    ### Save model
-    if args.save is not None:
-        save_path = 'trained_models'
-        name_save = args.save + ".pth" if args.save.split('.')[-1] != 'pth' else name_save
-        checkpoint_dict = {
-            'n_iters' : args.n_iteration,
-            'name' : name_save,
-            'time_created' : datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'model_state_dict' : model.state_dict(),
-            'optimizer' : args.optimizer,
-            'optimizer_state_dict' : optimizer.state_dict(),
-            'loss' : _LOSS,
-            'train_acc' : _ACCTRA,
-            'validation_acc' : _ACCVAL,
-            'elapsed_time' : elapsed_time
-        }
-        if args.penalty is not None:
-            checkpoint_dict['penalty'] = args.penalty
-            checkpoint_dict['reg_param'] = args.reg_param
-        torch.save(checkpoint_dict, os.path.join(save_path,name_save))
-
-    if args.disp:
-        label = [0, 1, 2]
-        plt.figure(figsize=(10,8))
-        plt.subplot(221)
-        plot_decision_regions(X_train.to(torch.device('cpu')), 
-                            y_train.view(y_train.shape[0]).to(torch.device('cpu')), 
-                            classifier=model.to(torch.device('cpu')), 
-                            label=label)
-        plt.title('Train Set')
-        plt.legend()
-
-        plt.subplot(222)
-        plot_decision_regions(X_val.to(torch.device('cpu')), 
-                            y_val.view(y_val.shape[0]).to(torch.device('cpu')), 
-                            classifier=model.to(torch.device('cpu')), 
-                            label=label)
-        plt.title('Validation Set')
-        plt.legend()
-
-        plt.subplot(223)
-        plt.plot(range(1, len(_LOSS)+1), _LOSS, marker='.')
-        plt.xlabel('Iterations')
-        plt.ylabel('Loss')
-        plt.title('Milti-classes Classification : Loss')
-
-        plt.subplot(224)
-        plt.plot(range(1, len(_ACCTRA)+1), _ACCTRA, label='train')
-        plt.plot(range(1, len(_ACCVAL)+1), _ACCVAL, label='validation')
-        plt.xlabel('Iterations')
-        plt.ylabel('Accuracy')
-        plt.title('Milti-classes Classification : Accuracy')
-        plt.legend()
-
-        plt.tight_layout()
-        plt.savefig('img/trained_results.png')
-        plt.show()
-
-
-
-
+    train(data=args.data, 
+        split_ratio=args.split_ratio,
+        disp=args.disp,
+        args_loss=args.loss,
+        args_optimizer=args.optimizer,
+        penalty=args.penalty,
+        reg_param=args.reg_param,
+        learning_rate=args.learning_rate,
+        control_sequence_directory=args.control_sequence_directory,
+        n_iteration=args.n_iteration,
+        args_save=args.save)
