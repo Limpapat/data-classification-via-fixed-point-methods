@@ -89,8 +89,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--disp',
-        action="store_false",
-        help='Display option to show experiment results, default is True'
+        action="store_true",
+        help='Display option to show experiment results, default is False'
     )
     parser.add_argument(
         '-n', '--n_test',
