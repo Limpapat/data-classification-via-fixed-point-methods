@@ -30,14 +30,4 @@ python train.py --data source/sample_generated_data.csv --loss MCE --optimizer I
 python experiment.py --test_data source/sample_generated_data.csv --trained_model demomodel.pth --n_test .1
 ```
 # Experimantal results
-- Compare each methods:
 ![This is an image](img/comparison_results.png)
-- without Regularization:
-![This is an image](img/demo_trained_results.png)
-![This is an image](img/demo_experiment_results.png)
-- L1-Regularization:
-![This is an image](img/l1_trained_results.png)
-![This is an image](img/l1_experiment_results.png)
-- L2-Regularization:
-![This is an image](img/l2_trained_results.png)
-![This is an image](img/l2_experiment_results.png)
