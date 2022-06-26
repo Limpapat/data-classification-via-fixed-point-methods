@@ -7,6 +7,7 @@ setting = {
     "penalty" : "l1",
     "n_test" : .1,
     "n_iter" : 100,
+    "disp" : True,
     "optimizers" : {
         "SGD" : {
             "lr" : 2.,

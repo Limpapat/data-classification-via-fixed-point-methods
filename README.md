@@ -12,7 +12,7 @@ Experimentation on various iterative fixed point methods for data classification
 ```bash
 cd <repository_path>
 conda activate <your_env_name>
-python <file_name>
+python comparison.py
 # have fun :)
 ```
 
@@ -30,6 +30,8 @@ python train.py --data source/sample_generated_data.csv --loss MCE --optimizer I
 python experiment.py --test_data source/sample_generated_data.csv --trained_model demomodel.pth --n_test .1
 ```
 # Experimantal results
+- Compare each methods:
+![This is an image](img/comparison_results.png)
 - without Regularization:
 ![This is an image](img/demo_trained_results.png)
 ![This is an image](img/demo_experiment_results.png)

@@ -273,7 +273,8 @@ class ParallelSFBA(SFBA):
             parallel_y.join()
         parallel_z.join()
         ### compute Ty
-        self.updatemodelparameters(from_state=state['y'])
+        if self.inertial:
+            self.updatemodelparameters(from_state=state['y'])
         with torch.enable_grad():
             loss = closure()
         for gi, group in zip(range(len(self.param_groups)), self.param_groups):

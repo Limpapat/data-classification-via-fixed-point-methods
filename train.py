@@ -194,7 +194,7 @@ def train(data:str='source/sample_generated_data.csv',
     ### Save model
     if args_save is not None:
         save_path = 'trained_models'
-        name_save = args_save + ".pth" if args_save.split('.')[-1] != 'pth' else name_save
+        name_save = args_save + ".pth" if args_save.split('.')[-1] != 'pth' else args_save
         checkpoint_dict = {
             'n_iters' : n_iteration,
             'name' : name_save,
@@ -318,8 +318,6 @@ if __name__ == '__main__':
         default=0.2,
         help='Learning rate, default is 0.2'
     )
-    ### plan ###
-    # add more argument
 
     args = parser.parse_args()
     train(data=args.data, 
