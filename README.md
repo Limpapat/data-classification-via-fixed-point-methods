@@ -1,4 +1,4 @@
-# data-classification-via-fixed-point-methods
+# Data Classification via Fixed Point Methods
 Experimentation on various iterative fixed point methods for data classification
 
 # What's New:
