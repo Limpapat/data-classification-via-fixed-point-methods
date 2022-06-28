@@ -12,6 +12,23 @@ setting = {
             "path" : "source/iris.data",
             "feature_selection" : [0, 1]
         },
+        {
+            "name" : "abalone",
+            "path" : "source/abalone.data",
+            "feature_selection" : [1, 2],
+            "target" : 0
+        },
+        {
+            "name" : "parkinsons",
+            "path" : "source/parkinsons.data",
+            "feature_selection" : [1, 2],
+            "target" : 17
+        },
+        {
+            "name" : "heart_disease",
+            "path" : "source/heart.csv",
+            "feature_selection" : [0, 3]
+        },
         ],
     "model" : "MLP",
     "loss" : "MCE",

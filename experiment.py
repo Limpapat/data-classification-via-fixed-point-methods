@@ -19,11 +19,12 @@ def experiment(data:str='source/sample_generated_data.csv',
     if os.path.isfile(args_checkpoint):
         checkpoint = torch.load(args_checkpoint, map_location=device)
         print('Trained model: ', checkpoint['name'])
-        
+
         ### Get data
         feature_selection = checkpoint['feature_selection'] if 'feature_selection' in checkpoint.keys() else [0, 1]
+        target = checkpoint['target'] if 'target' in checkpoint.keys() else -1
         if os.path.isfile(data):
-            X, y, label = get_data(csv_path=data, feature_selection=feature_selection, split_ratio=[n_test], disp=False)
+            X, y, label = get_data(csv_path=data, feature_selection=feature_selection, target=target, split_ratio=[n_test], disp=False)
         else:
             raise ValueError('Invalid data direcory')
         

@@ -18,10 +18,13 @@ python comparison.py
 # Supported:
 > dataset
 
-|Name|n_classes|
-|----|---------|
-|sample_generated_data|3|
-|iris|3|
+|Name|File name|n_classes|Source|
+|----|-----------|---------|------|
+|Sample generated data|sample_generated_data.csv|3|-|
+|Iris|iris.data|3|[LINK](https://archive.ics.uci.edu/ml/datasets/Iris)|
+|Abalone|abalone.data|3|[LINK](https://archive.ics.uci.edu/ml/datasets/Abalone)|
+|Parkinsons|parkinsons.data|2|[LINK](https://archive.ics.uci.edu/ml/datasets/Parkinsons)|
+|Heart Disease|heart.csv|2|[LINK](https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset?select=heart.csv)|
 ***
 > optimizer
 

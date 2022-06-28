@@ -11,6 +11,7 @@ import torch.optim as optim
 
 def train(data:str='source/sample_generated_data.csv', 
         feature_selection:list=[0,1],
+        target:int=-1,
         split_ratio:list=[.1, .3],
         disp:bool=False,
         args_loss:str='MCE',
@@ -24,7 +25,7 @@ def train(data:str='source/sample_generated_data.csv',
     print("\n========= INITAILIZING =========\n")
     print(f"Data directory : \'{data}\'")
     if os.path.isfile(data):
-        X, y, label = get_data(csv_path=data, feature_selection=feature_selection, split_ratio=split_ratio, disp=disp)
+        X, y, label = get_data(csv_path=data, feature_selection=feature_selection, target=target, split_ratio=split_ratio, disp=disp)
     else:
         raise ValueError('Invalid data direcory')
     
@@ -200,6 +201,7 @@ def train(data:str='source/sample_generated_data.csv',
             'n_iters' : n_iteration,
             'name' : name_save,
             'feature_selection' : feature_selection,
+            'target' : target,
             'time_created' : datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'model_state_dict' : model.state_dict(),
             'optimizer' : args_optimizer,
@@ -273,6 +275,12 @@ if __name__ == '__main__':
         help='List of feature indexes of trained dataset, default is [0, 1]'
     )
     parser.add_argument(
+        '-t', '--target',
+        type=int,
+        default=-1,
+        help='An index of target/label of trained dataset, default is -1'
+    )
+    parser.add_argument(
         '--disp',
         action="store_true",
         help='Display option to show dataset, default is False'
@@ -331,6 +339,7 @@ if __name__ == '__main__':
     train(data=args.data, 
         feature_selection=args.feature_selection,
         split_ratio=args.split_ratio,
+        target=args.target,
         disp=args.disp,
         args_loss=args.loss,
         args_optimizer=args.optimizer,

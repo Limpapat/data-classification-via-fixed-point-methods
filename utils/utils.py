@@ -7,22 +7,23 @@ import numpy as np
 import torch
 import os, json
 
-def get_data(csv_path:str, feature_selection:list=[0,1], disp:bool=False, stdf:bool=True, split_ratio:list=[.1,.3]):
+def get_data(csv_path:str, feature_selection:list=[0,1], target:int=-1, disp:bool=False, stdf:bool=True, split_ratio:list=[.1,.3]):
     """
     get_data()
         Descriptions: function for getting train, validation, test dataset
         Parameters:
             - csv_path : str : a path of dataset
             - feature_selection : list : feature index list
+            - target : int : an index of target/label
             - disp : bool : option to display data plot
             - stdf : bool : option to standardize features data 
             - split_ratio : list : ratio list to split dataset, [.1, .3] means get test 10% data of dataset and get validation 30% data of remains
     """
     # load data
     df = pd.read_csv(csv_path)
-    df.iloc[:,-1], label = pd.factorize(df.iloc[:,-1])
+    df.iloc[:,target], label = pd.factorize(df.iloc[:,target])
     # split train test
-    X, y = df.iloc[:, feature_selection].values, df.iloc[:,-1].values
+    X, y = df.iloc[:, feature_selection].values, df.iloc[:,target].values
     if len(split_ratio) == 2:
         _, data_test = train_test_split(df, test_size=split_ratio[0], random_state=42, shuffle=True)
         data_train, data_val = train_test_split(_, test_size=split_ratio[-1], random_state=42, shuffle=True)
@@ -36,7 +37,7 @@ def get_data(csv_path:str, feature_selection:list=[0,1], disp:bool=False, stdf:b
         raise ValueError('Invalid values: plaese assign split ratio list with lenght not greater than 2')
 
     X_train, X_val, X_test = data_train.iloc[:, feature_selection].values, data_val.iloc[:, feature_selection].values, data_test.iloc[:, feature_selection].values
-    y_train, y_val, y_test = data_train.iloc[:, -1].values, data_val.iloc[:, -1].values, data_test.iloc[:, -1].values
+    y_train, y_val, y_test = data_train.iloc[:, target].values, data_val.iloc[:, target].values, data_test.iloc[:, target].values
 
     if stdf:
         # standardize features
@@ -154,8 +155,9 @@ def loadcseq(path:str):
     return d
 
 if __name__ == '__main__':
-    path = os.path.join(os.getcwd(), 'source', 'iris.data')
-    feature_selection = [0, 1, 2, 3]
+    path = os.path.join(os.getcwd(), 'source', 'heart.csv')
+    feature_selection = [0, 3]
+    target = -1
     # path = os.path.join(os.getcwd(), 'source', 'sample_generated_data.csv')
     # feature_selection = [0, 1]
-    X, y, label = get_data(path, feature_selection=feature_selection, disp=True)
+    X, y, label = get_data(path, feature_selection=feature_selection, target=target, disp=True)

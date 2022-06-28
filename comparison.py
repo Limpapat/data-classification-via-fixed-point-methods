@@ -42,14 +42,17 @@ def compare(setting:str, istrain:bool=False):
             d['name'] = (d['path'].split('/')[-1]).split(".")[0]
         if 'feature_selection' not in d.keys():
             d['feature_selection'] = [0, 1]
+        if 'target' not in d.keys():
+            d['target'] = -1
         data_path = d['path']
         data_name = d['name']
         data_label = d['class_label'] if 'class_label' in d.keys() else None
         data_feature_selection = d['feature_selection']
+        data_target = d['target']
         print("=== START ===========================================================\n")
         print(f"DATASET: {data_name}")
         ### Load data
-        X, y, label = get_data(csv_path=data_path, feature_selection=data_feature_selection, split_ratio=data['split_ratio'], disp=False)
+        X, y, label = get_data(csv_path=data_path, feature_selection=data_feature_selection, target=data_target, split_ratio=data['split_ratio'], disp=False)
         
         device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
         X_train, X_val, X_test = X
@@ -82,6 +85,7 @@ def compare(setting:str, istrain:bool=False):
             if istrain:
                 train(data=data_path, 
                     feature_selection=data_feature_selection,
+                    target=data_target,
                     split_ratio=data['split_ratio'],
                     disp=False,
                     args_loss=data['loss'],
