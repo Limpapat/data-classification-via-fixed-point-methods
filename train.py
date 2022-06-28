@@ -10,6 +10,7 @@ import os, sys, time
 import torch.optim as optim
 
 def train(data:str='source/sample_generated_data.csv', 
+        feature_selection:list=[0,1],
         split_ratio:list=[.1, .3],
         disp:bool=False,
         args_loss:str='MCE',
@@ -23,7 +24,7 @@ def train(data:str='source/sample_generated_data.csv',
     print("\n========= INITAILIZING =========\n")
     print(f"Data directory : \'{data}\'")
     if os.path.isfile(data):
-        X, y = get_data(csv_path=data, split_ratio=split_ratio, disp=disp)
+        X, y, label = get_data(csv_path=data, feature_selection=feature_selection, split_ratio=split_ratio, disp=disp)
     else:
         raise ValueError('Invalid data direcory')
     
@@ -198,6 +199,7 @@ def train(data:str='source/sample_generated_data.csv',
         checkpoint_dict = {
             'n_iters' : n_iteration,
             'name' : name_save,
+            'feature_selection' : feature_selection,
             'time_created' : datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'model_state_dict' : model.state_dict(),
             'optimizer' : args_optimizer,
@@ -213,7 +215,6 @@ def train(data:str='source/sample_generated_data.csv',
         torch.save(checkpoint_dict, os.path.join(save_path,name_save))
 
     if disp:
-        label = [0, 1, 2]
         plt.figure(figsize=(10,8))
         plt.subplot(221)
         plot_decision_regions(X_train.to(torch.device('cpu')), 
@@ -263,6 +264,13 @@ if __name__ == '__main__':
         type=str,
         default='',
         help='Dataset directory'
+    )
+    parser.add_argument(
+        '-fs', '--feature_selection',
+        type=int,
+        nargs='+',
+        default=[0, 1],
+        help='List of feature indexes of trained dataset, default is [0, 1]'
     )
     parser.add_argument(
         '--disp',
@@ -321,6 +329,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     train(data=args.data, 
+        feature_selection=args.feature_selection,
         split_ratio=args.split_ratio,
         disp=args.disp,
         args_loss=args.loss,

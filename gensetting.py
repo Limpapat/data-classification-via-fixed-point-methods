@@ -1,7 +1,18 @@
 import json
 
 setting = {
-    "data" : "source/sample_generated_data.csv",
+    "data" : [
+        {
+            "name" : "sample_generated_data",
+            "path" : "source/sample_generated_data.csv",
+            "class_label" : ["class_1", "class_2", "class_3"]
+        },
+        {
+            "name" : "iris",
+            "path" : "source/iris.data",
+            "feature_selection" : [0, 1]
+        },
+        ],
     "model" : "MLP",
     "loss" : "MCE",
     "penalty" : "l1",

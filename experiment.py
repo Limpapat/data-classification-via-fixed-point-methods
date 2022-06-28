@@ -11,19 +11,7 @@ def experiment(data:str='source/sample_generated_data.csv',
     print("\n========= INITAILIZING =========\n")
     print(f"Data directory : \'{data}\'")
 
-    ### Get data
-    if os.path.isfile(data):
-        X, y = get_data(csv_path=data, split_ratio=[n_test], disp=False)
-    else:
-        raise ValueError('Invalid data direcory')
-    
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
-    X_train, X_val, X_test = X
-    y_train, y_val, y_test = y
-
-    ### Convert array to tensor
-    X_test = torch.tensor(X_test, dtype=torch.float32, device=device)
-    y_test = torch.tensor(y_test, dtype=torch.float32, device=device).view(-1).long()
 
     ### Load trained model
     model_saved_path = 'trained_models'
@@ -31,6 +19,21 @@ def experiment(data:str='source/sample_generated_data.csv',
     if os.path.isfile(args_checkpoint):
         checkpoint = torch.load(args_checkpoint, map_location=device)
         print('Trained model: ', checkpoint['name'])
+        
+        ### Get data
+        feature_selection = checkpoint['feature_selection'] if 'feature_selection' in checkpoint.keys() else [0, 1]
+        if os.path.isfile(data):
+            X, y, label = get_data(csv_path=data, feature_selection=feature_selection, split_ratio=[n_test], disp=False)
+        else:
+            raise ValueError('Invalid data direcory')
+        
+        X_train, X_val, X_test = X
+        y_train, y_val, y_test = y
+
+        ### Convert array to tensor
+        X_test = torch.tensor(X_test, dtype=torch.float32, device=device)
+        y_test = torch.tensor(y_test, dtype=torch.float32, device=device).view(-1).long()
+
         ### Set up model
         _n_features, _n_classes = X_test.shape[-1], torch.unique(y_test).shape[0]
         model = MLP(num_features=_n_features, num_classes=_n_classes, activation='softmax')
@@ -51,7 +54,6 @@ def experiment(data:str='source/sample_generated_data.csv',
     _LOSS, _ACCTRA, _ACCVAL = checkpoint['loss'], checkpoint['train_acc'], checkpoint['validation_acc']
     ### Display results
     if disp:
-        label = [0, 1, 2]
         plt.figure(figsize=(15,4))
         plt.subplot(131)
         plot_decision_regions(X_test.to(torch.device('cpu')), 
