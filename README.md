@@ -4,11 +4,11 @@ Experimentation on various iterative fixed point methods for data classification
 > What's New:
 - forward-backward splitting optimizer (FBA) & inertial FBA optimizer (IFBA)
 - SFBA, ISFBA, PFBA, IPFBA, ParallelSFBA, ParallelISFBA
-
+***
 > TODO:
 - Write a document detail
-
-> Supported Datasets:
+***
+### Supported Datasets:
 
 |Name|File name|n_classes|Source|
 |----|-----------|---------|------|
@@ -17,11 +17,10 @@ Experimentation on various iterative fixed point methods for data classification
 |Abalone|abalone.data|3|[LINK](https://archive.ics.uci.edu/ml/datasets/Abalone)|
 |Parkinsons|parkinsons.data|2|[LINK](https://archive.ics.uci.edu/ml/datasets/Parkinsons)|
 |Heart Disease|heart.csv|2|[LINK](https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset?select=heart.csv)|
-***
-> Supported Optimizers:
+
+### Supported Optimizers:
 
 SGD, FBA, IFBA, SFBA, ISFBA, PFBA, IPFBA, ParallelSFBA, ParallelISFBA
-***
 
 ## How to run code:
 ```bash
