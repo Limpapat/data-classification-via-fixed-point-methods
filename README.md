@@ -1,11 +1,11 @@
 # Data Classification via Fixed Point Methods
 Experimentation on various iterative fixed point methods for data classification
 
-# What's New:
+> What's New:
 - forward-backward splitting optimizer (FBA) & inertial FBA optimizer (IFBA)
 - SFBA, ISFBA, PFBA, IPFBA, ParallelSFBA, ParallelISFBA
 
-# TODO:
+> TODO:
 - Write a document detail
 
 # How to run code:
