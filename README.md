@@ -17,12 +17,14 @@ python comparison.py
 ```
 # Supported:
 > dataset
+
 |Name|n_classes|
 |----|---------|
 |sample_generated_data|3|
 |iris|3|
 ***
 > optimizer
+
 SGD, FBA, IFBA, SFBA, ISFBA, PFBA, IPFBA, ParallelSFBA, ParallelISFBA
 ***
 
