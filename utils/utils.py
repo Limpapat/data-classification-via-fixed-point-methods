@@ -4,6 +4,7 @@ from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import seaborn
 import torch
 import os, json
 
@@ -21,6 +22,7 @@ def get_data(csv_path:str, feature_selection:list=[0,1], target:int=-1, disp:boo
     """
     # load data
     df = pd.read_csv(csv_path)
+    df_ = df.copy()
     df.iloc[:,target], label = pd.factorize(df.iloc[:,target])
     # split train test
     X, y = df.iloc[:, feature_selection].values, df.iloc[:,target].values
@@ -112,6 +114,7 @@ def get_data(csv_path:str, feature_selection:list=[0,1], target:int=-1, disp:boo
         plt.ylim([X[:,1].min()-0.1,X[:,1].max()+0.1])
 
         plt.tight_layout()
+        seaborn.pairplot(df_, hue="target")
         plt.show()
     return ([X_train, X_val, X_test],[y_train, y_val, y_test], label)
 
@@ -156,7 +159,7 @@ def loadcseq(path:str):
 
 if __name__ == '__main__':
     path = os.path.join(os.getcwd(), 'source', 'heart.csv')
-    feature_selection = [0, 3]
+    feature_selection = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     target = -1
     # path = os.path.join(os.getcwd(), 'source', 'sample_generated_data.csv')
     # feature_selection = [0, 1]
