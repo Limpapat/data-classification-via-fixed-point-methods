@@ -6,6 +6,7 @@ Experimentation on various iterative fixed point methods for data classification
 - SFBA, ISFBA, PFBA, IPFBA, ParallelSFBA, ParallelISFBA
 ***
 > TODO:
+- Set up code into python library
 - Write a document detail
 ***
 ### Supported Datasets:
