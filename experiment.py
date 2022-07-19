@@ -7,7 +7,8 @@ import argparse, os
 def experiment(data:str='source/sample_generated_data.csv',
                 n_test:float=.1,
                 trained_model:str='demomodel.pth',
-                disp=False):
+                disp:bool=False, 
+                save_fig:bool=False):
     print("\n========= INITAILIZING =========\n")
     print(f"Data directory : \'{data}\'")
 
@@ -24,7 +25,7 @@ def experiment(data:str='source/sample_generated_data.csv',
         feature_selection = checkpoint['feature_selection'] if 'feature_selection' in checkpoint.keys() else [0, 1]
         target = checkpoint['target'] if 'target' in checkpoint.keys() else -1
         if os.path.isfile(data):
-            X, y, label = get_data(csv_path=data, feature_selection=feature_selection, target=target, split_ratio=[n_test], disp=False)
+            X, y, label = get_data(csv_path=data, feature_selection=feature_selection, target=target, split_ratio=[n_test], disp=False, save_fig=save_fig)
         else:
             raise ValueError('Invalid data direcory')
         
@@ -97,6 +98,11 @@ if __name__ == '__main__':
         help='Display option to show experiment results, default is False'
     )
     parser.add_argument(
+        '--not_save_data_fig',
+        action="store_false",
+        help='Save dataset figure option, default is True'
+    )
+    parser.add_argument(
         '-n', '--n_test',
         type=float,
         default=1.,
@@ -113,5 +119,6 @@ if __name__ == '__main__':
     experiment(data=args.test_data,
                 n_test=args.n_test,
                 trained_model=args.trained_model,
-                disp=args.disp)
+                disp=args.disp,
+                save_fig=args.not_save_data_fig)
     

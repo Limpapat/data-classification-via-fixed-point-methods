@@ -10,7 +10,7 @@ import os, sys, time
 import torch.optim as optim
 
 def train(data:str='source/sample_generated_data.csv', 
-        feature_selection:list=[0,1],
+        feature_selection:list=None,
         target:int=-1,
         split_ratio:list=[.1, .3],
         disp:bool=False,
@@ -21,11 +21,12 @@ def train(data:str='source/sample_generated_data.csv',
         learning_rate:float=2.,
         control_sequence_directory:str='./cseq.json',
         n_iteration:int=100,
-        args_save:str=None):
+        args_save:str=None,
+        save_fig:bool=False):
     print("\n========= INITAILIZING =========\n")
     print(f"Data directory : \'{data}\'")
     if os.path.isfile(data):
-        X, y, label = get_data(csv_path=data, feature_selection=feature_selection, target=target, split_ratio=split_ratio, disp=disp)
+        X, y, label = get_data(csv_path=data, feature_selection=feature_selection, target=target, split_ratio=split_ratio, disp=disp, save_fig=save_fig)
     else:
         raise ValueError('Invalid data direcory')
     
@@ -286,6 +287,11 @@ if __name__ == '__main__':
         help='Display option to show dataset, default is False'
     )
     parser.add_argument(
+        '--not_save_data_fig',
+        action="store_false",
+        help='Save dataset figure option, default is True'
+    )
+    parser.add_argument(
         '--split_ratio',
         type=float,
         nargs='+',
@@ -348,4 +354,5 @@ if __name__ == '__main__':
         learning_rate=args.learning_rate,
         control_sequence_directory=args.control_sequence_directory,
         n_iteration=args.n_iteration,
-        args_save=args.save)
+        args_save=args.save,
+        save_fig=args.not_save_data_fig)

@@ -1,6 +1,6 @@
 from train import train
 from experiment import experiment
-from utils.utils import get_data, plot_decision_regions
+from utils.utils import get_data
 from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,7 +41,7 @@ def compare(setting:str, istrain:bool=False):
         if 'name' not in d.keys():
             d['name'] = (d['path'].split('/')[-1]).split(".")[0]
         if 'feature_selection' not in d.keys():
-            d['feature_selection'] = [0, 1]
+            d['feature_selection'] = None
         if 'target' not in d.keys():
             d['target'] = -1
         data_path = d['path']
@@ -52,7 +52,7 @@ def compare(setting:str, istrain:bool=False):
         print("=== START ===========================================================\n")
         print(f"DATASET: {data_name}")
         ### Load data
-        X, y, label = get_data(csv_path=data_path, feature_selection=data_feature_selection, target=data_target, split_ratio=data['split_ratio'], disp=False)
+        X, y, label = get_data(csv_path=data_path, feature_selection=data_feature_selection, target=data_target, split_ratio=data['split_ratio'], disp=False, save_fig=True)
         
         device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
         X_train, X_val, X_test = X
@@ -68,11 +68,7 @@ def compare(setting:str, istrain:bool=False):
         y_test = torch.tensor(y_test, dtype=torch.float32, device=device).view(-1).long()
         
         ### Train & Experiment
-        if data['disp']:
-            _n_fig = len(data['optimizers'].keys())
-            fig, axs = plt.subplots(_n_fig, 3)
-            fig.set_figheight(_n_fig*4)
-            fig.set_figwidth(15)
+        result_dict = {}
         for i, name in enumerate(data['optimizers'].keys()):
             opt = data['optimizers'][name]
             if 'lr' not in opt.keys():
@@ -101,8 +97,49 @@ def compare(setting:str, istrain:bool=False):
                                                                     n_test=data['n_test'],
                                                                     trained_model=args_save,
                                                                     disp=False)
-            ### Display results
-            if data['disp']:
+            result_dict[name] = {
+                'acc_test' : acc_test,
+                'model' : model,
+                '_LOSS' : _LOSS,
+                '_ACCTRA' : _ACCTRA,
+                '_ACCVAL' : _ACCVAL
+            }
+            print("=== NEXT OPTIMIZER ==================================================\n")
+        ### Display results
+        _n_fig = len(data['optimizers'].keys()) + 1
+        fig, axs = plt.subplots(3, _n_fig) if X_train.size()[-1] == 2 else plt.subplots(2, _n_fig)
+        fig.set_figheight(10 if X_train.size()[-1]==2 else 7)
+        fig.set_figwidth(_n_fig*4)
+        for i, name in enumerate(data['optimizers'].keys()):
+            acc_test, model, _LOSS, _ACCTRA, _ACCVAL = result_dict[name]['acc_test'], result_dict[name]['model'], result_dict[name]['_LOSS'], result_dict[name]['_ACCTRA'], result_dict[name]['_ACCVAL']
+            axs[0, 0].plot(range(1, len(_LOSS)+1), _LOSS, label=name)
+            axs[0, 0].set_xlabel('Iterations')
+            axs[0, 0].set_ylabel('Loss')
+            axs[0, 0].set_title(f"ALL : Trained Model\'s Loss")
+            axs[1, 0].plot(range(1, len(_ACCTRA)+1), _ACCTRA, label=name)
+            axs[1, 0].set_xlabel('Iterations')
+            axs[1, 0].set_ylabel('Accuracy')
+            axs[1, 0].set_title(f"ALL : Trained Model\'s Accuracy")
+        axs[0, 0].legend()
+        axs[1, 0].legend()
+        for i, name in enumerate(data['optimizers'].keys()):
+            acc_test, model, _LOSS, _ACCTRA, _ACCVAL = result_dict[name]['acc_test'], result_dict[name]['model'], result_dict[name]['_LOSS'], result_dict[name]['_ACCTRA'], result_dict[name]['_ACCVAL']
+            axs[0, i+1].plot(range(1, len(_LOSS)+1), _LOSS, marker='.')
+            axs[0, i+1].set_xlabel('Iterations')
+            axs[0, i+1].set_ylabel('Loss')
+            axs[0, i+1].set_title(f"{name} : Trained Model\'s Loss")
+
+            axs[1, i+1].plot(range(1, len(_ACCTRA)+1), _ACCTRA, label='train')
+            axs[1, i+1].plot(range(1, len(_ACCVAL)+1), _ACCVAL, label='validation')
+            axs[1, i+1].set_xlabel('Iterations')
+            axs[1, i+1].set_ylabel('Accuracy')
+            if X_train.size()[-1] == 2:
+                axs[1, i+1].set_title(f"{name} : Trained Model\'s Accuracy")
+            else:
+                axs[1, i+1].set_title(f"{name} : Test Set Accuracy={acc_test*100:.2f}%")
+            axs[1, i+1].legend()
+
+            if X_train.size()[-1] == 2:
                 label = label if data_label is None else data_label
                 classifier=model.to(torch.device('cpu'))
                 X = X_test.to(torch.device('cpu'))
@@ -121,6 +158,20 @@ def compare(setting:str, istrain:bool=False):
                                     np.arange(x2_min, x2_max, resolution))
                 tensor = torch.tensor(np.array([xx1.ravel(), xx2.ravel()]).T).float()
                 probas = classifier.forward(tensor)
+
+                if i==0:
+                    # plot test set
+                    for idx, cl in enumerate(np.unique(y)):
+                        axs[2, i].scatter(x=X[y == cl, 0], y=X[y == cl, 1],
+                                    alpha=0.8, color=cmap(idx),
+                                    edgecolor='black',
+                                    marker=markers[idx], 
+                                    label=label[idx])
+                    axs[2, i].grid(linestyle='--')
+                    axs[2, i].set_title('Test set')
+                    axs[2, i].set_xlim(xx1.min()-0.1, xx1.max()+0.1)
+                    axs[2, i].set_ylim(xx2.min()-0.1, xx2.max()+0.1)
+                    axs[2, i].legend()
                 
                 if probas.shape[1]==1:
                     tredshold = torch.zeros_like(probas).add_(0.5)
@@ -128,36 +179,22 @@ def compare(setting:str, istrain:bool=False):
                 Z = np.argmax(probas.detach().numpy(), axis=1)
 
                 Z = Z.reshape(xx1.shape)
-                axs[i,0].contourf(xx1, xx2, Z, alpha=0.4, cmap=cmap)
-                axs[i,0].set_xlim(xx1.min()-0.1, xx1.max()+0.1)
-                axs[i,0].set_ylim(xx2.min()-0.1, xx2.max()+0.1)
+                axs[2, i+1].contourf(xx1, xx2, Z, alpha=0.4, cmap=cmap)
+                axs[2, i+1].set_xlim(xx1.min()-0.1, xx1.max()+0.1)
+                axs[2, i+1].set_ylim(xx2.min()-0.1, xx2.max()+0.1)
 
                 # plot class samples
                 for idx, cl in enumerate(np.unique(y)):
-                    axs[i,0].scatter(x=X[y == cl, 0], y=X[y == cl, 1],
+                    axs[2, i+1].scatter(x=X[y == cl, 0], y=X[y == cl, 1],
                                 alpha=0.8, color=cmap(idx),
                                 edgecolor='black',
                                 marker=markers[idx], 
                                 label=label[idx])
-                axs[i, 0].set_title(f"Experiment {name} : accuracy={acc_test*100:.2f}%")
-                axs[i, 0].legend()
+                axs[2, i+1].set_title(f"{name} : Accuracy={acc_test*100:.2f}%")
+                axs[2, i+1].legend()
 
-                axs[i, 1].plot(range(1, len(_LOSS)+1), _LOSS, marker='.')
-                axs[i, 1].set_xlabel('Iterations')
-                axs[i, 1].set_ylabel('Loss')
-                axs[i, 1].set_title(f"{name} : Trained Model\'s Loss")
-
-                axs[i, 2].plot(range(1, len(_ACCTRA)+1), _ACCTRA, label='train')
-                axs[i, 2].plot(range(1, len(_ACCVAL)+1), _ACCVAL, label='validation')
-                axs[i, 2].set_xlabel('Iterations')
-                axs[i, 2].set_ylabel('Accuracy')
-                axs[i, 2].set_title(f"{name} : Trained Model\'s Accuracy")
-                axs[i, 2].legend()
-
-                plt.tight_layout()
-                print("=== NEXT OPTIMIZER ==================================================\n")
-        if data['disp']:
-            plt.savefig(f"img/comparison_{data_name}_results.png")
+            plt.tight_layout()
+        plt.savefig(f"img/comparison_{data_name}_results.png")
         print("=== END =============================================================\n")
     if data['disp']:
         plt.show()
