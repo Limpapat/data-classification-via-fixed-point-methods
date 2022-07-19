@@ -44,7 +44,7 @@ python train.py --data source/sample_generated_data.csv --loss MCE --optimizer I
 python experiment.py --test_data source/sample_generated_data.csv --trained_model demomodel.pth --n_test .1
 ```
 ## Experimantal results
-![This is an image](img/comparison_results.png)
+![This is an image](img/comparison_sample_generated_data_results.png)
 
 ## Reference
 1. H. H. Bauschke and P. L. Combettes. Convex Analysis and Monotone Operator Theory in Hilbert Spaces. Springer Publishing Company, Incorporated, 2nd edition, 2017. [BOOK](https://link.springer.com/book/10.1007/978-1-4419-9467-7)
