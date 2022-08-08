@@ -195,6 +195,8 @@ def train(data:str='source/sample_generated_data.csv',
     print("================================\n")
 
     ### Save model
+    if not os.path.exists('trained_models'):
+        os.mkdir('trained_models')
     if args_save is not None:
         save_path = 'trained_models'
         name_save = args_save + ".pth" if args_save.split('.')[-1] != 'pth' else args_save
