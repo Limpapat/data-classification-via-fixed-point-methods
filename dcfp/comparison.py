@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import json
 import argparse
+import os
 
 def compare(setting:str, istrain:bool=False):
     with open(setting, 'r') as f:
@@ -77,6 +78,10 @@ def compare(setting:str, istrain:bool=False):
                 opt['rp'] = .01
             if 'cseq' not in opt.keys():
                 opt['cseq'] = './cseq.json'
+            if not os.path.exists('trained_models'):
+                os.mkdir('trained_models')
+            if not os.path.exists('trained_models/comparison'):
+                os.mkdir('trained_models/comparison')
             args_save = f"comparison/{name}.pth"
             if istrain:
                 train(data=data_path, 
