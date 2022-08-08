@@ -28,6 +28,14 @@ SGD, FBA, IFBA, SFBA, ISFBA, PFBA, IPFBA, ParallelSFBA, ParallelISFBA
 ```bash
 pip install "git+https://github.com/Limpapat/data-classification-via-fixed-point-methods.git#egg=dcfp"
 ```
+### Example:
+```python
+from dcfp.controller import DCFP
+
+mydcfp = DCFP()
+mydcfp.setup("./setting.json")
+mydcfp.run()
+```
 
 ## How to run code inside repo:
 ```bash
