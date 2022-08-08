@@ -16,5 +16,5 @@ setuptools.setup(
     description='A python library for data classification via fixed point methods',
     version=version,
     packages=setuptools.find_packages(),
-    install_requires=['requests', 'numpy', 'matplotlib', 'pandas', 'scipy', 'scikit-learn', 'torch', 'torchvision', 'torchaudio']
+    install_requires=['requests', 'numpy', 'matplotlib', 'seaborn', 'pandas', 'scipy', 'scikit-learn', 'torch', 'torchvision', 'torchaudio']
 )
