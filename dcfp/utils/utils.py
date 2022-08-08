@@ -124,6 +124,8 @@ def get_data(csv_path:str, feature_selection:list=None, target:int=-1, disp:bool
             plt.tight_layout()
         else:
             seaborn.pairplot(df_, hue=df_.columns[target])
+        if not os.path.exists('img'):
+            os.mkdir('img')
         plt.savefig(f"img/{data_name}.png")
         if disp:
             plt.show()
