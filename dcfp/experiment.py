@@ -1,5 +1,5 @@
-from model.model import MLP
-from utils.utils import get_data, plot_decision_regions
+from dcfp.model.model import MLP
+from dcfp.utils.utils import get_data, plot_decision_regions
 import matplotlib.pyplot as plt
 import torch
 import argparse, os

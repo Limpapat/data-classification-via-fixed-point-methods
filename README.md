@@ -4,6 +4,7 @@ Experimentation on various iterative fixed point methods for data classification
 > What's New:
 - forward-backward splitting optimizer (FBA) & inertial FBA optimizer (IFBA)
 - SFBA, ISFBA, PFBA, IPFBA, ParallelSFBA, ParallelISFBA
+- Update demo setup code for dcfp library --> (Need some tests!)
 ***
 > TODO:
 - Set up code into python library
@@ -23,15 +24,20 @@ Experimentation on various iterative fixed point methods for data classification
 
 SGD, FBA, IFBA, SFBA, ISFBA, PFBA, IPFBA, ParallelSFBA, ParallelISFBA
 
-## How to run code:
+## How to install the dcfp library
 ```bash
-cd <repository_path>
+pip install "git+https://github.com/Limpapat/data-classification-via-fixed-point-methods.git#egg=dcfp"
+```
+
+## How to run code inside repo:
+```bash
+cd <repository_path>/dcfp
 conda activate <your_env_name>
 python comparison.py
 # have fun :)
 ```
 
-## Train demo command
+### Train demo command
 * Sample train SGD with default learning rate = 0.2
 ```python
 python train.py --data source/sample_generated_data.csv --loss MCE
@@ -40,12 +46,12 @@ python train.py --data source/sample_generated_data.csv --loss MCE
 ```python
 python train.py --data source/sample_generated_data.csv --loss MCE --optimizer ISFBA -p l1 -lr 2. -csd ./cseq.json
 ```
-## Experiment demo command
+### Experiment demo command
 ```python
 python experiment.py --test_data source/sample_generated_data.csv --trained_model demomodel.pth --n_test .1
 ```
 ## Experimantal results
-![This is an image](img/comparison_sample_generated_data_results.png)
+![This is an image](images/comparison_sample_generated_data_results.png)
 
 ## Reference
 1. H. H. Bauschke and P. L. Combettes. Convex Analysis and Monotone Operator Theory in Hilbert Spaces. Springer Publishing Company, Incorporated, 2nd edition, 2017. [BOOK](https://link.springer.com/book/10.1007/978-1-4419-9467-7)

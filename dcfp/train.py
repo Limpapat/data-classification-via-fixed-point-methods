@@ -1,12 +1,12 @@
-from model.model import MLP
-from utils.utils import get_data, plot_decision_regions, loadcseq
-from utils.functional import *
+from dcfp.model.model import MLP
+from dcfp.utils.utils import get_data, plot_decision_regions, loadcseq
+from dcfp.utils.functional import *
 from datetime import datetime
-from optim.optim import FBA, SFBA, PFBA, ParallelSFBA
+from dcfp.optim.optim import FBA, SFBA, PFBA, ParallelSFBA
 import matplotlib.pyplot as plt
 import argparse
 import torch
-import os, sys, time
+import os, time
 import torch.optim as optim
 
 def train(data:str='source/sample_generated_data.csv', 
